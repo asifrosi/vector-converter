@@ -1,50 +1,69 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Vector Maker Pro</title>
-<style>
-body{font-family:system-ui;background:#1a1a2e;color:#fff;padding:15px;text-align:center}
-h1{color:#f5576c;font-size:1.4rem}
-.upload{border:2px dashed #f5576c;border-radius:15px;padding:30px;margin:15px 0;cursor:pointer}
-.btn{background:#f5576c;color:#fff;border:none;padding:12px 25px;border-radius:10px;margin:5px;cursor:pointer}
-#preview{display:none;margin:15px 0;background:#222;padding:10px;border-radius:10px}
-#preview.active{display:block}
-img{max-width:100%;border-radius:5px}
-#status{padding:10px;border-radius:8px;margin:10px 0;display:none}
-#status.show{display:block}
-.success{background:#2ecc71;color:#fff}
-.error{background:#e74c3c;color:#fff}
-input[type="file"]{display:none}
-</style>
+    <meta charset="UTF-8">
+    <title>Vector Maker Pro - Professional</title>
+    <script src="https://cdn.jsdelivr.net/npm/potrace@2.1.8/potrace.min.js"></script>
+    <style>
+        body{font-family:system-ui;background:#1a1a2e;color:#fff;padding:20px;text-align:center}
+        .upload{border:2px dashed #f5576c;padding:40px;margin:20px 0;cursor:pointer;border-radius:15px}
+        .btn{background:#f5576c;color:#fff;border:none;padding:15px 30px;border-radius:10px;cursor:pointer;font-size:1rem}
+        #preview{max-width:300px;margin:20px auto;display:none}
+        #result{margin-top:20px;padding:20px;background:#1e3a28;border-radius:10px;display:none}
+    </style>
 </head>
 <body>
-<h1>🎨 Vector Maker Pro</h1>
-<p>JPG/PNG → SVG/EPS</p>
-<div class="upload" onclick="document.getElementById('file').click()">
-<h2>📤 Upload Image</h2>
-<p>Tap here to select</p>
-</div>
-<input type="file" id="file" accept="image/*" onchange="load(event)">
-<div id="status"></div>
-<div id="preview">
-<img id="img" alt="preview"><br><br>
-<label>Threshold: <input type="range" id="th" min="0" max="255" value="128" oninput="document.getElementById('tv').textContent=this.value"> <span id="tv">128</span></label><br><br>
-<button class="btn" onclick="convert()">⚡ Convert</button>
-</div>
-<div id="result" style="display:none;background:#1e3a28;padding:15px;border-radius:10px;margin-top:15px">
-<h3 style="color:#2ecc71">✅ Done!</h3>
-<div id="svg"></div><br>
-<button class="btn" onclick="dl('svg')">📥 SVG</button>
-<button class="btn" onclick="dl('eps')">📥 EPS</button>
-</div>
-<script>
-let img=null,fn='vector',svgData=null;
-function show(m,t){const s=document.getElementById('status');s.textContent=m;s.className='show '+t;setTimeout(()=>s.className='',3000)}
-function load(e){const f=e.target.files[0];if(!f||!f.type.startsWith('image/')){show('Only images!','error');return}fn=f.name.replace(/\.[^/.]+$/,'');const r=new FileReader();r.onload=(e)=>{const i=document.getElementById('img');i.src=e.target.result;i.onload=()=>{img=i;document.getElementById('preview').className='active';show('Loaded!','success')}};r.readAsDataURL(f)}
-function convert(){if(!img){show('Upload first!','error');return}const b=event.target;b.textContent='Converting...';setTimeout(()=>{const c=document.createElement('canvas'),x=c.getContext('2d');let w=img.naturalWidth,h=img.naturalHeight;const m=600;if(w>m||h>m){const r=Math.min(m/w,m/h);w=Math.round(w*r);h=Math.round(h*r)}c.width=w;c.height=h;x.drawImage(img,0,0,w,h);const t=parseInt(document.getElementById('th').value);const d=x.getImageData(0,0,w,h);const pts=[];for(let y=0;y<h;y++){for(let x=0;x<w;x++){const i=(y*w+x)*4;const g=(d.data[i]+d.data[i+1]+d.data[i+2])/3;if(g<t){pts.push({x,y})}}}let path='';if(pts.length>0){path='M'+pts[0].x+','+pts[0].y;for(let i=1;i<pts.length;i++){if(Math.abs(pts[i].x-pts[i-1].x)<=1&&Math.abs(pts[i].y-pts[i-1].y)<=1){path+=' L'+pts[i].x+','+pts[i].y}else{path+=' M'+pts[i].x+','+pts[i].y}}}path+=' Z';svgData='<svg xmlns="http://www.w3.org/2000/svg" width="'+w+'" height="'+h+'" viewBox="0 0 '+w+' '+h+'"><path d="'+path+'" fill="black" stroke="none"/></svg>';document.getElementById('svg').innerHTML=svgData;document.getElementById('result').style.display='block';b.textContent='⚡ Convert';show('Done!','success')},100)}
-function dl(t){if(!svgData)return;if(t==='svg'){const b=new Blob([svgData],{type:'image/svg+xml'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=fn+'.svg';a.click();URL.revokeObjectURL(u);show('SVG downloaded!','success')}else{const p=new DOMParser();const d=p.parseFromString(svgData,'image/svg+xml');const s=d.querySelector('svg');const w=s.getAttribute('width')||500,h=s.getAttribute('height')||500;let e='%!PS-Adobe-3.0 EPSF-3.0\n%%BoundingBox:0 0 '+w+' '+h+'\n%%Creator:VectorMaker\n%%EndComments\n';const ps=s.querySelectorAll('path');ps.forEach(p=>{const d=p.getAttribute('d')||'';const f=p.getAttribute('fill')||'#000';let r=0,g=0,b=0;if(f.startsWith('#')){const x=f.replace('#','');r=parseInt(x.substr(0,2),16)/255;g=parseInt(x.substr(2,2),16)/255;b=parseInt(x.substr(4,2),16)/255}e+=r.toFixed(2)+' '+g.toFixed(2)+' '+b.toFixed(2)+' setrgbcolor newpath\n';const t=d.match(/[MLCZ][^MLCZ]*/g)||[];t.forEach(c=>{const y=c[0];const z=c.slice(1).trim().split(/[\s,]+/).filter(Boolean).map(Number);if(y==='M'&&z.length>=2)e+=z[0]+' '+(h-z[1])+' moveto\n';else if(y==='L'&&z.length>=2)e+=z[0]+' '+(h-z[1])+' lineto\n';else if(y==='C'&&z.length>=6)e+=z[0]+' '+(h-z[1])+' '+z[2]+' '+(h-z[3])+' '+z[4]+' '+(h-z[5])+' curveto\n';else if(y==='Z')e+='closepath\n'});e+='fill\n'});e+='%%EOF\n';const b=new Blob([e],{type:'application/postscript'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=fn+'.eps';a.click();URL.revokeObjectURL(u);show('EPS downloaded!','success')}}
-</script>
+    <h1>🎨 Vector Maker Pro</h1>
+    <div class="upload" onclick="document.getElementById('file').click()">
+        <h2>📤 Click to Upload Image</h2>
+    </div>
+    <input type="file" id="file" accept="image/*" style="display:none" onchange="processImage(event)">
+    
+    <div id="preview"><img id="img" style="width:100%"></div>
+    <button class="btn" id="convBtn" style="display:none" onclick="convert()">⚡ Convert to Vector</button>
+    
+    <div id="result">
+        <h3>✅ Done!</h3>
+        <div id="svgContainer"></div>
+        <button class="btn" onclick="downloadSVG()">📥 Download SVG</button>
+    </div>
+
+    <script>
+        let imgElement = document.getElementById('img');
+        let svgResult = "";
+
+        function processImage(e) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                imgElement.src = event.target.result;
+                document.getElementById('preview').style.display = 'block';
+                document.getElementById('convBtn').style.display = 'inline-block';
+            };
+            reader.readAsDataURL(e.target.files[0]);
+        }
+
+        function convert() {
+            document.getElementById('convBtn').textContent = "Converting...";
+            
+            // Potrace এর মাধ্যমে ইমেজ ট্রেসিং
+            const trace = new Potrace.Potrace();
+            trace.loadImage(imgElement.src);
+            trace.process(() => {
+                svgResult = trace.getSVG();
+                document.getElementById('svgContainer').innerHTML = svgResult;
+                document.getElementById('result').style.display = 'block';
+                document.getElementById('convBtn').textContent = "⚡ Convert to Vector";
+            });
+        }
+
+        function downloadSVG() {
+            const blob = new Blob([svgResult], {type: 'image/svg+xml'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'vector-image.svg';
+            a.click();
+        }
+    </script>
 </body>
 </html>
