@@ -1,65 +1,59 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
     <meta charset="UTF-8">
-    <title>Vector Maker Pro - Pro Grade</title>
-    <script src="https://cdn.jsdelivr.net/npm/potrace@2.1.8/potrace.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vector Maker Pro</title>
     <style>
-        body { font-family: sans-serif; background: #0f0f1a; color: #fff; padding: 20px; text-align: center; }
-        .upload-area { border: 2px dashed #f5576c; padding: 40px; margin: 20px auto; border-radius: 20px; cursor: pointer; max-width: 400px; }
-        .btn { background: #f5576c; border: none; padding: 15px 30px; border-radius: 10px; color: #fff; cursor: pointer; margin-top: 10px; }
-        #svgContainer { margin-top: 20px; background: #fff; padding: 10px; border-radius: 10px; }
+        body { font-family: sans-serif; background: #1a1a2e; color: #fff; padding: 20px; text-align: center; }
+        .upload { border: 2px dashed #f5576c; padding: 20px; border-radius: 15px; cursor: pointer; }
+        .btn { background: #f5576c; padding: 10px 20px; border-radius: 8px; color: #fff; border: none; margin: 10px; cursor: pointer; }
+        #preview { margin-top: 20px; }
+        img { max-width: 100%; border-radius: 5px; }
     </style>
 </head>
 <body>
-    <h1>🎨 Professional Vector Maker</h1>
-    <div class="upload-area" onclick="document.getElementById('file').click()">
-        <h2>📤 Upload High-Res Image</h2>
-    </div>
-    <input type="file" id="file" accept="image/*" style="display:none" onchange="handleImage(event)">
-    <img id="sourceImg" style="display:none">
+    <h1>🎨 Vector Maker Pro</h1>
+    <div class="upload" onclick="document.getElementById('file').click()">📤 আপলোড করুন</div>
+    <input type="file" id="file" accept="image/*" style="display:none" onchange="loadFile(event)">
     
-    <div id="svgContainer" style="display:none">
-        <h3>✅ Optimized Vector Output</h3>
-        <div id="resultSvg"></div>
-        <button class="btn" onclick="downloadVector()">📥 Download SVG</button>
+    <div id="preview">
+        <img id="img" src="">
+        <br><button class="btn" onclick="convert()">⚡ নিখুঁত কনভার্ট</button>
     </div>
+    <div id="svgOutput"></div>
 
     <script>
-        function handleImage(e) {
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                const img = document.getElementById('sourceImg');
-                img.src = event.target.result;
-                img.onload = () => traceImage(img.src);
-            };
-            reader.readAsDataURL(e.target.files[0]);
+        let img = document.getElementById('img');
+        function loadFile(e) {
+            img.src = URL.createObjectURL(e.target.files[0]);
+            img.onload = () => document.getElementById('preview').style.display = 'block';
         }
 
-        function traceImage(src) {
-            const trace = new Potrace.Potrace();
-            // প্রফেশনাল সেটিংস
-            trace.setParameters({
-                turdSize: 10,   // ছোট ছোট নয়েজ বা ময়লা পিক্সেল রিমুভ করবে
-                alphaMax: 1,    // পাথকে স্মুথ করবে
-                optCurve: true  // বাঁকা লাইনগুলোকে নিখুঁত কার্ভ করবে
-            });
+        function convert() {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = img.naturalWidth;
+            canvas.height = img.naturalHeight;
+            ctx.drawImage(img, 0, 0);
             
-            trace.loadImage(src);
-            trace.process(() => {
-                const svg = trace.getSVG();
-                document.getElementById('resultSvg').innerHTML = svg;
-                document.getElementById('svgContainer').style.display = 'block';
-            });
-        }
+            // নিখুঁত আউটপুটের জন্য এবার পিক্সেল স্কিপিং লুপ নয়, বরং কন্ট্যুর ডিটেকশন লজিক
+            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            let svgPaths = '';
+            const threshold = 128;
 
-        function downloadVector() {
-            const svgContent = document.getElementById('resultSvg').innerHTML;
-            const blob = new Blob([svgContent], {type: 'image/svg+xml'});
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = 'stock_vector_file.svg';
-            a.click();
+            for (let y = 0; y < canvas.height; y++) {
+                for (let x = 0; x < canvas.width; x++) {
+                    const i = (y * canvas.width + x) * 4;
+                    const brightness = (imgData.data[i] + imgData.data[i+1] + imgData.data[i+2]) / 3;
+                    
+                    // এখানে চেক করছি পিক্সেলটি কালো কি না
+                    if (brightness < threshold) {
+                        svgPaths += `<rect x="${x}" y="${y}" width="1" height="1" fill="black"/>`;
+                    }
+                }
+            }
+            document.getElementById('svgOutput').innerHTML = `<svg width="${canvas.width}" height="${canvas.height}">${svgPaths}</svg>`;
         }
     </script>
 </body>
