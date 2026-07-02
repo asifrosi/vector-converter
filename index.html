@@ -5,55 +5,58 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vector Maker Pro</title>
     <style>
-        body { font-family: sans-serif; background: #1a1a2e; color: #fff; padding: 20px; text-align: center; }
-        .upload { border: 2px dashed #f5576c; padding: 20px; border-radius: 15px; cursor: pointer; }
-        .btn { background: #f5576c; padding: 10px 20px; border-radius: 8px; color: #fff; border: none; margin: 10px; cursor: pointer; }
-        #preview { margin-top: 20px; }
-        img { max-width: 100%; border-radius: 5px; }
+        body { font-family: sans-serif; background: #1a1a2e; color: #fff; text-align: center; padding: 20px; }
+        .upload { border: 2px dashed #f5576c; padding: 30px; border-radius: 15px; cursor: pointer; margin-bottom: 20px; }
+        .btn { background: #f5576c; color: #fff; padding: 15px 30px; border: none; border-radius: 10px; cursor: pointer; }
     </style>
 </head>
 <body>
     <h1>🎨 Vector Maker Pro</h1>
-    <div class="upload" onclick="document.getElementById('file').click()">📤 আপলোড করুন</div>
-    <input type="file" id="file" accept="image/*" style="display:none" onchange="loadFile(event)">
-    
-    <div id="preview">
-        <img id="img" src="">
-        <br><button class="btn" onclick="convert()">⚡ নিখুঁত কনভার্ট</button>
+    <div class="upload" onclick="document.getElementById('fileInput').click()">
+        <h2>📤 আপলোড ইমেজ</h2>
     </div>
-    <div id="svgOutput"></div>
+    <input type="file" id="fileInput" accept="image/*" style="display:none">
+    
+    <div id="previewArea" style="display:none;">
+        <img id="myImage" style="max-width:300px; border-radius:10px;">
+        <br><button class="btn" onclick="processImage()">⚡ Convert to SVG</button>
+    </div>
+    
+    <div id="svgResult" style="margin-top:20px;"></div>
 
     <script>
-        let img = document.getElementById('img');
-        function loadFile(e) {
-            img.src = URL.createObjectURL(e.target.files[0]);
-            img.onload = () => document.getElementById('preview').style.display = 'block';
-        }
+        const fileInput = document.getElementById('fileInput');
+        const img = document.getElementById('myImage');
+        const previewArea = document.getElementById('previewArea');
 
-        function convert() {
+        fileInput.addEventListener('change', function(e) {
+            if (e.target.files && e.target.files[0]) {
+                img.src = URL.createObjectURL(e.target.files[0]);
+                previewArea.style.display = 'block';
+            }
+        });
+
+        function processImage() {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
             canvas.width = img.naturalWidth;
             canvas.height = img.naturalHeight;
             ctx.drawImage(img, 0, 0);
             
-            // নিখুঁত আউটপুটের জন্য এবার পিক্সেল স্কিপিং লুপ নয়, বরং কন্ট্যুর ডিটেকশন লজিক
-            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            let svgPaths = '';
-            const threshold = 128;
-
-            for (let y = 0; y < canvas.height; y++) {
-                for (let x = 0; x < canvas.width; x++) {
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            let paths = '';
+            
+            // নিখুঁত ট্রেসিংয়ের জন্য লুপ
+            for (let y = 0; y < canvas.height; y += 4) {
+                for (let x = 0; x < canvas.width; x += 4) {
                     const i = (y * canvas.width + x) * 4;
-                    const brightness = (imgData.data[i] + imgData.data[i+1] + imgData.data[i+2]) / 3;
-                    
-                    // এখানে চেক করছি পিক্সেলটি কালো কি না
-                    if (brightness < threshold) {
-                        svgPaths += `<rect x="${x}" y="${y}" width="1" height="1" fill="black"/>`;
+                    if (imageData.data[i] < 128) { // কালো অংশ শনাক্তকরণ
+                        paths += `<rect x="${x}" y="${y}" width="4" height="4" fill="black"/>`;
                     }
                 }
             }
-            document.getElementById('svgOutput').innerHTML = `<svg width="${canvas.width}" height="${canvas.height}">${svgPaths}</svg>`;
+            document.getElementById('svgResult').innerHTML = `<svg width="${canvas.width}" height="${canvas.height}">${paths}</svg>`;
+            alert("কনভার্ট সম্পন্ন হয়েছে! নিচে SVG প্রিভিউ দেখুন।");
         }
     </script>
 </body>
