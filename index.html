@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Vector Maker</title>
+<title>Vector Maker Pro</title>
 <style>
 body{font-family:system-ui;background:#1a1a2e;color:#fff;padding:15px;text-align:center}
 h1{color:#f5576c;font-size:1.4rem}
@@ -20,7 +20,7 @@ input[type="file"]{display:none}
 </style>
 </head>
 <body>
-<h1>🎨 Vector Maker</h1>
+<h1>🎨 Vector Maker Pro</h1>
 <p>JPG/PNG → SVG/EPS</p>
 <div class="upload" onclick="document.getElementById('file').click()">
 <h2>📤 Upload Image</h2>
@@ -40,11 +40,10 @@ input[type="file"]{display:none}
 <button class="btn" onclick="dl('eps')">📥 EPS</button>
 </div>
 <script>
-// Simple potrace implementation
 let img=null,fn='vector',svgData=null;
 function show(m,t){const s=document.getElementById('status');s.textContent=m;s.className='show '+t;setTimeout(()=>s.className='',3000)}
 function load(e){const f=e.target.files[0];if(!f||!f.type.startsWith('image/')){show('Only images!','error');return}fn=f.name.replace(/\.[^/.]+$/,'');const r=new FileReader();r.onload=(e)=>{const i=document.getElementById('img');i.src=e.target.result;i.onload=()=>{img=i;document.getElementById('preview').className='active';show('Loaded!','success')}};r.readAsDataURL(f)}
-function convert(){if(!img){show('Upload first!','error');return}const b=event.target;b.textContent='Converting...';setTimeout(()=>{const c=document.createElement('canvas'),x=c.getContext('2d');let w=img.naturalWidth,h=img.naturalHeight;const m=800;if(w>m||h>m){const r=Math.min(m/w,m/h);w=Math.round(w*r);h=Math.round(h*r)}c.width=w;c.height=h;x.drawImage(img,0,0,w,h);const t=parseInt(document.getElementById('th').value);const d=x.getImageData(0,0,w,h);const paths=[];for(let y=0;y<h;y+=2){for(let x=0;x<w;x+=2){const i=(y*w+x)*4;const g=(d.data[i]+d.data[i+1]+d.data[i+2])/3;if(g<t){paths.push(`M${x},${y} h1 v1 h-1 z`)}}}svgData=`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><path d="${paths.join(' ')}" fill="black"/></svg>`;document.getElementById('svg').innerHTML=svgData;document.getElementById('result').style.display='block';b.textContent='⚡ Convert';show('Done!','success')},100)}
+function convert(){if(!img){show('Upload first!','error');return}const b=event.target;b.textContent='Converting...';setTimeout(()=>{const c=document.createElement('canvas'),x=c.getContext('2d');let w=img.naturalWidth,h=img.naturalHeight;const m=600;if(w>m||h>m){const r=Math.min(m/w,m/h);w=Math.round(w*r);h=Math.round(h*r)}c.width=w;c.height=h;x.drawImage(img,0,0,w,h);const t=parseInt(document.getElementById('th').value);const d=x.getImageData(0,0,w,h);const pts=[];for(let y=0;y<h;y++){for(let x=0;x<w;x++){const i=(y*w+x)*4;const g=(d.data[i]+d.data[i+1]+d.data[i+2])/3;if(g<t){pts.push({x,y})}}}let path='';if(pts.length>0){path='M'+pts[0].x+','+pts[0].y;for(let i=1;i<pts.length;i++){if(Math.abs(pts[i].x-pts[i-1].x)<=1&&Math.abs(pts[i].y-pts[i-1].y)<=1){path+=' L'+pts[i].x+','+pts[i].y}else{path+=' M'+pts[i].x+','+pts[i].y}}}path+=' Z';svgData='<svg xmlns="http://www.w3.org/2000/svg" width="'+w+'" height="'+h+'" viewBox="0 0 '+w+' '+h+'"><path d="'+path+'" fill="black" stroke="none"/></svg>';document.getElementById('svg').innerHTML=svgData;document.getElementById('result').style.display='block';b.textContent='⚡ Convert';show('Done!','success')},100)}
 function dl(t){if(!svgData)return;if(t==='svg'){const b=new Blob([svgData],{type:'image/svg+xml'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=fn+'.svg';a.click();URL.revokeObjectURL(u);show('SVG downloaded!','success')}else{const p=new DOMParser();const d=p.parseFromString(svgData,'image/svg+xml');const s=d.querySelector('svg');const w=s.getAttribute('width')||500,h=s.getAttribute('height')||500;let e='%!PS-Adobe-3.0 EPSF-3.0\n%%BoundingBox:0 0 '+w+' '+h+'\n%%Creator:VectorMaker\n%%EndComments\n';const ps=s.querySelectorAll('path');ps.forEach(p=>{const d=p.getAttribute('d')||'';const f=p.getAttribute('fill')||'#000';let r=0,g=0,b=0;if(f.startsWith('#')){const x=f.replace('#','');r=parseInt(x.substr(0,2),16)/255;g=parseInt(x.substr(2,2),16)/255;b=parseInt(x.substr(4,2),16)/255}e+=r.toFixed(2)+' '+g.toFixed(2)+' '+b.toFixed(2)+' setrgbcolor newpath\n';const t=d.match(/[MLCZ][^MLCZ]*/g)||[];t.forEach(c=>{const y=c[0];const z=c.slice(1).trim().split(/[\s,]+/).filter(Boolean).map(Number);if(y==='M'&&z.length>=2)e+=z[0]+' '+(h-z[1])+' moveto\n';else if(y==='L'&&z.length>=2)e+=z[0]+' '+(h-z[1])+' lineto\n';else if(y==='C'&&z.length>=6)e+=z[0]+' '+(h-z[1])+' '+z[2]+' '+(h-z[3])+' '+z[4]+' '+(h-z[5])+' curveto\n';else if(y==='Z')e+='closepath\n'});e+='fill\n'});e+='%%EOF\n';const b=new Blob([e],{type:'application/postscript'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=fn+'.eps';a.click();URL.revokeObjectURL(u);show('EPS downloaded!','success')}}
 </script>
 </body>
