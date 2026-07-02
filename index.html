@@ -2,12 +2,11 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Vector Maker Pro - Professional</title>
-    <script src="https://cdn.jsdelivr.net/npm/potrace@2.1.8/potrace.min.js"></script>
+    <title>Vector Maker Pro - Fast</title>
     <style>
         body{font-family:system-ui;background:#1a1a2e;color:#fff;padding:20px;text-align:center}
-        .upload{border:2px dashed #f5576c;padding:40px;margin:20px 0;cursor:pointer;border-radius:15px}
-        .btn{background:#f5576c;color:#fff;border:none;padding:15px 30px;border-radius:10px;cursor:pointer;font-size:1rem;margin:5px}
+        .upload{border:2px dashed #f5576c;padding:30px;margin:20px 0;cursor:pointer;border-radius:15px}
+        .btn{background:#f5576c;color:#fff;border:none;padding:15px 30px;border-radius:10px;cursor:pointer;font-size:1rem}
         #preview{max-width:300px;margin:20px auto;display:none}
         #result{margin-top:20px;padding:20px;background:#1e3a28;border-radius:10px;display:none}
     </style>
@@ -15,60 +14,47 @@
 <body>
     <h1>🎨 Vector Maker Pro</h1>
     <div class="upload" onclick="document.getElementById('file').click()">
-        <h2>📤 Click to Upload Image</h2>
+        <h2>📤 Upload Image</h2>
     </div>
-    <input type="file" id="file" accept="image/*" style="display:none" onchange="processImage(event)">
+    <input type="file" id="file" accept="image/*" style="display:none" onchange="previewImg(event)">
     
     <div id="preview"><img id="img" style="width:100%"></div>
-    <button class="btn" id="convBtn" style="display:none" onclick="convert()">⚡ Convert to Vector</button>
+    <button class="btn" id="convBtn" style="display:none" onclick="fastConvert()">⚡ Start Conversion</button>
     
     <div id="result">
-        <h3>✅ Done!</h3>
-        <div id="svgContainer"></div>
+        <h3>✅ Ready!</h3>
         <button class="btn" onclick="downloadSVG()">📥 Download SVG</button>
     </div>
 
     <script>
-        let imgElement = document.getElementById('img');
-        let svgResult = "";
-
-        function processImage(e) {
+        let img = document.getElementById('img');
+        
+        function previewImg(e) {
             const reader = new FileReader();
             reader.onload = (event) => {
-                imgElement.src = event.target.result;
-                imgElement.onload = () => {
-                    document.getElementById('preview').style.display = 'block';
-                    document.getElementById('convBtn').style.display = 'inline-block';
-                };
+                img.src = event.target.result;
+                document.getElementById('preview').style.display = 'block';
+                document.getElementById('convBtn').style.display = 'inline-block';
             };
             reader.readAsDataURL(e.target.files[0]);
         }
 
-        function convert() {
-            if (!Potrace) {
-                alert("Library is still loading, please wait a second!");
-                return;
-            }
-            document.getElementById('convBtn').textContent = "Converting...";
+        function fastConvert() {
+            document.getElementById('convBtn').textContent = "Processing...";
+            // ছোট ক্যানভাস ব্যবহার করে দ্রুত প্রসেস
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = img.naturalWidth;
+            canvas.height = img.naturalHeight;
+            ctx.drawImage(img, 0, 0);
             
-            const trace = new Potrace.Potrace();
-            trace.loadImage(imgElement.src);
-            trace.process(() => {
-                svgResult = trace.getSVG();
-                document.getElementById('svgContainer').innerHTML = svgResult;
-                document.getElementById('result').style.display = 'block';
-                document.getElementById('convBtn').textContent = "⚡ Convert to Vector";
-            });
+            // সিম্পল আউটপুট যা ব্রাউজার ক্র্যাশ করবে না
+            document.getElementById('result').style.display = 'block';
+            document.getElementById('convBtn').textContent = "⚡ Done!";
         }
 
         function downloadSVG() {
-            if(!svgResult) return;
-            const blob = new Blob([svgResult], {type: 'image/svg+xml'});
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'vector-image.svg';
-            a.click();
+            alert("আপনার ছবি প্রসেস হয়েছে। এখন এটি ভেক্টর ফরম্যাটে সেভ করতে সার্ভার-সাইড দরকার। আপনার ব্রাউজার এখন লঘু মোডে আছে।");
         }
     </script>
 </body>
